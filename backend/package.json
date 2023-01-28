@@ -1,0 +1,31 @@
+{
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^18.6.4",
+    "@types/ws": "^8.5.4",
+    "@typescript-eslint/eslint-plugin": "^5.32.0",
+    "@typescript-eslint/parser": "^5.32.0",
+    "eslint": "^8.21.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-unicorn": "^43.0.2",
+    "nodemon": "^2.0.19",
+    "prettier": "^2.7.1",
+    "rimraf": "^3.0.2",
+    "tsc-alias": "^1.7.0",
+    "tsx": "^3.11.0",
+    "typescript": "^4.7.4"
+  },
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "nodemon --exec \"npm run start\" -e ts --watch src",
+    "lint": "eslint . --cache --cache-location node_modules/.cache/.eslintcache --ignore-pattern node_modules/",
+    "format": "npm run lint -- --fix; prettier --cache --ignore-unknown --write --loglevel warn '{,!(node_modules)/**/}*'",
+    "format-check": "prettier --cache --ignore-unknown --check '{,!(node_modules)/**/}*'",
+    "type": "tsc --noEmit",
+    "unused": "npx -y ts-unused-exports tsconfig.json --ignoreFiles=.*config",
+    "build": "rimraf dist && tsc -p tsconfig.build.json && tsc-alias -f -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "ws": "^8.12.0"
+  }
+}
