@@ -84,6 +84,7 @@ module.exports = {
     'unicorn/no-array-reduce': 'off',
     'unicorn/prefer-array-index-of': 'off',
     'unicorn/prefer-dom-node-text-content': 'off',
+    'vue/multi-word-component-names': 'off',
     'unicorn/catch-error-name': [
       'warn',
       {
