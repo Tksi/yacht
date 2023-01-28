@@ -31,7 +31,7 @@ const gameStates = new Map<GameId, GameState>();
 
 type InMessage =
   | {
-      type: 'JOIN' | 'LEAVE';
+      type: 'JOIN';
       gameId: GameId;
       userName: string;
     }
@@ -89,25 +89,6 @@ wss.on('connection', (ws, req) => {
           break;
         }
 
-        // [] closeのときに、userID探し出してやる
-        case 'LEAVE': {
-          if (gameStates.has(message.gameId)) {
-            gameStates.get(message.gameId)!.delete(userId);
-
-            // PUBLICのみになったとき、gameStatesから消去
-            if (gameStates.get(message.gameId)!.size <= 1) {
-              gameStates.delete(message.gameId);
-            } else {
-              broadcast(
-                { type: 'GAMESTATE', body: gameStates.get(message.gameId)! },
-                message.gameId
-              );
-            }
-          }
-
-          break;
-        }
-
         // [] START
         case 'START': {
           break;
@@ -129,6 +110,23 @@ wss.on('connection', (ws, req) => {
   });
 
   ws.on('close', () => {
+    for (const [gameId, gameState] of gameStates) {
+      for (const [userId] of gameState) {
+        if (
+          userId === `USER-${req.socket.remoteAddress}:${req.socket.remotePort}`
+        ) {
+          gameState.delete(userId);
+
+          // PUBLICのみになったとき、gameStatesから消去
+          if (gameState.size <= 1) {
+            gameStates.delete(gameId);
+          } else {
+            broadcast({ type: 'GAMESTATE', body: gameState }, gameId);
+          }
+        }
+      }
+    }
+
     console.debug(
       `👋 ${color.magenta}${req.socket.remoteAddress}:${req.socket.remotePort}${color.reset} Disconnected`
     );
@@ -162,7 +160,15 @@ const unicast = (message: outMessage, userId: UserId) => {
         // @ts-ignore
         `${color.green}->${color.reset} ${color.magenta}${client._socket.remoteAddress}:${client._socket.remotePort}${color.reset}`
       );
-      console.debug(`${JSON.stringify(message, null, 2)}`);
+      console.debug(
+        `${JSON.stringify(
+          message.type === 'GAMESTATE'
+            ? { type: 'GAMESTATE', body: [...message.body] }
+            : message,
+          null,
+          2
+        )}`
+      );
     }
   }
 };
