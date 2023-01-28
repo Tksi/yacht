@@ -89,6 +89,7 @@ wss.on('connection', (ws, req) => {
           break;
         }
 
+        // [] closeのときに、userID探し出してやる
         case 'LEAVE': {
           if (gameStates.has(message.gameId)) {
             gameStates.get(message.gameId)!.delete(userId);
