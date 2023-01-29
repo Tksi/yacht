@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import type { UserStates } from '../types/index';
+import type { UserId, UserStates } from '../types/index';
 
-const props = defineProps<{ userStates: UserStates }>();
-console.log(props.userStates);
+defineProps<{ userStates: UserStates; turn: UserId | null }>();
 </script>
 
 <template>
-  <h1>{{ userStates }}</h1>
-
   <table class="scoreBoard">
     <tr class="header">
-      <th>Role</th>
-      <th v-for="[userId, userState] in userStates" :key="userId">
+      <th></th>
+      <th
+        v-for="[userId, userState] in userStates"
+        :key="userId"
+        :class="{ active: userId === turn }"
+      >
         {{ userState.userName }}
       </th>
     </tr>
@@ -52,15 +53,18 @@ console.log(props.userStates);
       </th>
     </tr>
     <tr>
-      <td>sum</td>
+      <td>sum&nbsp;</td>
       <th v-for="[userId, userState] in userStates" :key="userId">
-        {{ userState.state.score?.reduce((b, a) => b + a) }}
+        {{ userState.state.score?.reduce((b: any, a: any) => b + a) }}
       </th>
     </tr>
   </table>
 </template>
 
 <style scoped>
+.active {
+  background-color: yellow;
+}
 .header {
   border-bottom: 5px solid;
 }

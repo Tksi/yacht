@@ -1,3 +1,4 @@
+import { replacer, reviver } from 'lib/jsonMap';
 import { WebSocketServer } from 'ws';
 import type {
   GameId,
@@ -26,10 +27,11 @@ wss.on('connection', (ws, req) => {
     console.debug(
       `${color.blue}<-${color.reset} ${color.magenta}${req.socket.remoteAddress}:${req.socket.remotePort}${color.reset}`
     );
-    console.debug(rawMessage.toString());
+    // console.debug(rawMessage.toString());
 
     try {
-      const message = JSON.parse(rawMessage.toString()) as ReqMessage;
+      const message = JSON.parse(rawMessage.toString(), reviver) as ReqMessage;
+      console.debug(message);
       const userId =
         `USER-${req.socket.remoteAddress}:${req.socket.remotePort}` as UserId;
 
@@ -37,17 +39,14 @@ wss.on('connection', (ws, req) => {
         case 'JOIN': {
           // すでにgameStateがあるとき
           if (gameStates.has(message.gameId)) {
-            // ゲームが始まっていないとき
-            if (gameStates.get(message.gameId)?.publicState.turn === null) {
-              gameStates.get(message.gameId)!.userStates.set(userId, {
-                userName: message.userName,
-                state: {},
-              });
-            }
+            gameStates.get(message.gameId)!.userStates.set(userId, {
+              userName: message.userName,
+              state: {},
+            });
           } else {
             // gameState初期化
             const gameState: GameState = {
-              publicState: { turn: null },
+              publicState: { turn: null, state: {} },
               userStates: new Map(),
             };
             gameState.userStates.set(userId, {
@@ -60,20 +59,20 @@ wss.on('connection', (ws, req) => {
           unicast({ type: 'USERID', body: userId }, userId);
           broadcast(
             { type: 'GAMESTATE', body: gameStates.get(message.gameId)! },
-            message.gameId
+            gameStates.get(message.gameId)!
           );
 
           break;
         }
 
-        // [] START
-        case 'START': {
-          // userStatesシャッフルする
-          break;
-        }
+        case 'SEND': {
+          gameStates.delete(message.gameId);
 
-        // [] NEXT
-        case 'NEXT': {
+          broadcast(
+            { type: 'GAMESTATE', body: message.gameState },
+            message.gameState
+          );
+
           break;
         }
 
@@ -83,13 +82,13 @@ wss.on('connection', (ws, req) => {
         }
       }
     } catch (err) {
-      console.error(`❌ Error ${err}`);
+      console.error(`❌ ${err}`);
     }
   });
 
   ws.on('close', () => {
     for (const [gameId, gameState] of gameStates) {
-      for (const [userId] of gameState!.userStates) {
+      for (const [userId] of gameState.userStates) {
         if (
           userId === `USER-${req.socket.remoteAddress}:${req.socket.remotePort}`
         ) {
@@ -99,7 +98,7 @@ wss.on('connection', (ws, req) => {
           if (gameState!.userStates.size === 0) {
             gameStates.delete(gameId);
           } else {
-            broadcast({ type: 'GAMESTATE', body: gameState }, gameId);
+            broadcast({ type: 'GAMESTATE', body: gameState }, gameState);
           }
         }
       }
@@ -111,11 +110,9 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-const broadcast = (message: ResMessage, gameId: GameId) => {
-  for (const userId of gameStates.get(gameId)!.userStates.keys()) {
-    if (userId.startsWith('USER-')) {
-      unicast(message, userId);
-    }
+const broadcast = (message: ResMessage, gameState: GameState) => {
+  for (const userId of gameState.userStates.keys()) {
+    unicast(message, userId);
   }
 };
 
@@ -126,39 +123,13 @@ const unicast = (message: ResMessage, userId: UserId) => {
       `USER-${client._socket.remoteAddress}:${client._socket.remotePort}` ===
       userId
     ) {
-      if (message.type === 'GAMESTATE') {
-        client.send(
-          JSON.stringify({
-            type: 'GAMESTATE',
-            body: {
-              publicState: message.body!.publicState,
-              userStates: [...message.body!.userStates],
-            },
-          })
-        );
-      } else {
-        client.send(JSON.stringify(message));
-      }
+      client.send(JSON.stringify(message, replacer));
 
       console.debug(
         // @ts-ignore
         `${color.green}->${color.reset} ${color.magenta}${client._socket.remoteAddress}:${client._socket.remotePort}${color.reset}`
       );
-      console.debug(
-        `${JSON.stringify(
-          message.type === 'GAMESTATE'
-            ? {
-                type: 'GAMESTATE',
-                body: {
-                  publicState: message.body!.publicState,
-                  userStates: [...message.body!.userStates],
-                },
-              }
-            : message,
-          null,
-          2
-        )}`
-      );
+      // console.debug(`${JSON.stringify(message, replacer, 2)}`);
     }
   }
 };

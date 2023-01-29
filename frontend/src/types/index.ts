@@ -11,6 +11,7 @@ export type GameState =
   | {
       publicState: {
         turn: UserId | null;
+        state: { [key: string]: any };
       };
       userStates: UserStates;
     }
@@ -25,10 +26,9 @@ export type ReqMessage =
       userName: string;
     }
   | {
-      type: 'NEXT';
-    }
-  | {
-      type: 'START';
+      type: 'SEND';
+      gameId: GameId;
+      gameState: GameState;
     };
 
 export type ResMessage =
