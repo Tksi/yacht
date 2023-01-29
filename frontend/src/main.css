@@ -8,4 +8,5 @@
 
 html {
   height: 100dvh;
+  user-select: none;
 }

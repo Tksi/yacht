@@ -1,5 +1,5 @@
-import { mainModule } from 'node:process';
 import { WebSocketServer } from 'ws';
+import type { GameState, UserId } from '../../frontend/src/types';
 
 const color = {
   green: '\u001B[32m',
@@ -14,18 +14,6 @@ const wss = new WebSocketServer({ port });
 console.debug(`WebSocker Server Listen on ${port}`);
 
 type GameId = `GAME-${string}`;
-
-type UserId = 'PUBLIC' | `USER-${string}`;
-
-type UserState =
-  | {
-      turn: UserId | null;
-    }
-  | {
-      userName: string;
-    };
-
-type GameState = Map<UserId, UserState>;
 
 const gameStates = new Map<GameId, GameState>();
 
@@ -42,7 +30,7 @@ type InMessage =
       type: 'START';
     };
 
-type outMessage =
+type OutMessage =
   | {
       type: 'GAMESTATE';
       body: GameState;
@@ -66,17 +54,21 @@ wss.on('connection', (ws, req) => {
 
       switch (message.type) {
         case 'JOIN': {
+          // すでにgameStateがあるとき
           if (gameStates.has(message.gameId)) {
-            // @ts-ignore
-            if (gameStates.get(message.gameId)!.get('PUBLIC')?.turn === null) {
+            // ゲームが始まっていないとき
+            if (gameStates.get(message.gameId)?.publicState.turn === null) {
               gameStates
                 .get(message.gameId)!
-                .set(userId, { userName: message.userName });
+                .userStates.set(userId, { userName: message.userName });
             }
           } else {
-            const gameState: GameState = new Map();
-            gameState.set('PUBLIC', { turn: null });
-            gameState.set(userId, { userName: message.userName });
+            // gameState初期化
+            const gameState: GameState = {
+              publicState: { turn: null },
+              userStates: new Map(),
+            };
+            gameState.userStates.set(userId, { userName: message.userName });
             gameStates.set(message.gameId, gameState);
           }
 
@@ -111,14 +103,14 @@ wss.on('connection', (ws, req) => {
 
   ws.on('close', () => {
     for (const [gameId, gameState] of gameStates) {
-      for (const [userId] of gameState) {
+      for (const [userId] of gameState.userStates) {
         if (
           userId === `USER-${req.socket.remoteAddress}:${req.socket.remotePort}`
         ) {
-          gameState.delete(userId);
+          gameState.userStates.delete(userId);
 
-          // PUBLICのみになったとき、gameStatesから消去
-          if (gameState.size <= 1) {
+          // 誰もいなくなったときgameStateを消去
+          if (gameState.userStates.size === 0) {
             gameStates.delete(gameId);
           } else {
             broadcast({ type: 'GAMESTATE', body: gameState }, gameId);
@@ -133,15 +125,15 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-const broadcast = (message: outMessage, gameId: GameId) => {
-  for (const userId of gameStates.get(gameId)!.keys()) {
+const broadcast = (message: OutMessage, gameId: GameId) => {
+  for (const userId of gameStates.get(gameId)!.userStates.keys()) {
     if (userId.startsWith('USER-')) {
       unicast(message, userId);
     }
   }
 };
 
-const unicast = (message: outMessage, userId: UserId) => {
+const unicast = (message: OutMessage, userId: UserId) => {
   for (const client of wss.clients) {
     if (
       // @ts-ignore
@@ -150,7 +142,13 @@ const unicast = (message: outMessage, userId: UserId) => {
     ) {
       if (message.type === 'GAMESTATE') {
         client.send(
-          JSON.stringify({ type: 'GAMESTATE', body: [...message.body] })
+          JSON.stringify({
+            type: 'GAMESTATE',
+            body: {
+              publicState: message.body.publicState,
+              userStates: [...message.body.userStates],
+            },
+          })
         );
       } else {
         client.send(JSON.stringify(message));
@@ -163,7 +161,13 @@ const unicast = (message: outMessage, userId: UserId) => {
       console.debug(
         `${JSON.stringify(
           message.type === 'GAMESTATE'
-            ? { type: 'GAMESTATE', body: [...message.body] }
+            ? {
+                type: 'GAMESTATE',
+                body: {
+                  publicState: message.body.publicState,
+                  userStates: [...message.body.userStates],
+                },
+              }
             : message,
           null,
           2
