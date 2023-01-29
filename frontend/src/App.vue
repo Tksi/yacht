@@ -114,7 +114,7 @@ const diceHold = (e: MouseEvent): void => {
   }
 };
 
-const diceRoll = (e: MouseEvent) => {
+const diceRoll = () => {
   const isMyTurn =
     gameState.value.userStates?.get(gameState.value.publicState.turn!)
       ?.userName === userName;

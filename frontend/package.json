@@ -8,7 +8,7 @@
     "preview": "vite preview",
     "build-only": "vite build",
     "type": "vue-tsc --noEmit",
-    "lint": "eslint . --cache --cache-location node_modules/.cache/.eslintcache --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
+    "lint": "eslint . --cache --cache-location node_modules/.cache/.eslintcache --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix"
   },
   "dependencies": {
     "uuid": "^9.0.0",

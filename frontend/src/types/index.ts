@@ -2,6 +2,7 @@ export type UserId = `USER-${string}`;
 
 export type UserState = {
   userName: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   state: { [key: string]: any };
 };
 
@@ -11,6 +12,7 @@ export type GameState =
   | {
       publicState: {
         turn: UserId | null;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         state: { [key: string]: any };
       };
       userStates: UserStates;
