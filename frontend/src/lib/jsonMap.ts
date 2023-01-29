@@ -2,7 +2,7 @@ export const replacer = (_: string, value: any) => {
   if (value instanceof Map) {
     return {
       dataType: 'Map',
-      value: [...value.entries()], // or with spread: value: [...value]
+      value: [...value.entries()],
     };
   } else {
     return value;

@@ -4,21 +4,43 @@ import { ref, toRaw } from 'vue';
 import Dice from './components/Dice.vue';
 import Msg from './components/Msg.vue';
 import ScoreBoard from './components/ScoreBoard.vue';
-import type { GameId, GameState, ReqMessage, ResMessage } from './types';
+import type {
+  GameId,
+  GameState,
+  ReqMessage,
+  ResMessage,
+  UserId,
+} from './types';
 import { replacer, reviver } from '@/lib/jsonMap';
 
 const gameId = new URL(location.href).searchParams.get('gameId') as GameId;
 
-if (gameId === null) {
-  location.href = `${location.origin}?${new URLSearchParams([
+const reload = () =>
+  (location.href = `${location.origin}?${new URLSearchParams([
     ['gameId', `GAME-${uuidv4()}`],
-  ]).toString()}`;
+  ]).toString()}`);
+
+if (gameId === null) {
+  reload();
 }
 
 const ws = new WebSocket(import.meta.env.VITE_WS ?? 'ws://localhost:4567');
 
 let gameState = ref<GameState>({});
 let userName = localStorage.getItem('userName');
+
+const send = () =>
+  ws.send(
+    JSON.stringify(
+      {
+        type: 'SEND',
+        gameId,
+        // @ts-ignore
+        gameState: toRaw(gameState)._rawValue,
+      },
+      replacer
+    )
+  );
 
 ws.addEventListener('open', () => {
   while (!userName) {
@@ -51,35 +73,33 @@ ws.addEventListener('message', ({ data: JSONmessage }) => {
   }
 });
 
-const start = () => {
-  const userIds = [...gameState.value.userStates.keys()];
-  gameState.value.publicState.turn =
-    userIds[Math.trunc(Math.random() * userIds.length)];
-
-  // スコア
-  for (const [, userState] of gameState.value.userStates) {
-    userState.state.score = new Array(6).fill(0);
-  }
-
-  // サイコロ
+const resetDice = () => {
   gameState.value.publicState.state.diceArr = new Array(5)
     .fill(0)
     .map(() => Math.trunc(Math.random() * 6) + 1);
   gameState.value.publicState.state.holdArr = new Array(5).fill(false);
   gameState.value.publicState.state.diceRollCount = 1;
+};
+
+const start = () => {
+  const userIds = [...gameState.value.userStates.keys()];
+
+  // ターン
+  gameState.value.publicState.turn =
+    userIds[Math.trunc(Math.random() * userIds.length)];
+  gameState.value.publicState.state.turnCount = 0;
+
+  // スコア
+  for (const [, userState] of gameState.value.userStates) {
+    userState.state.score = new Array(6).fill(0);
+    userState.state.scoreFixed = new Array(6).fill(false);
+  }
+
+  // サイコロ
+  resetDice();
 
   gameState.value.publicState.state.message = 'click to hold';
-  ws.send(
-    JSON.stringify(
-      {
-        type: 'SEND',
-        gameId,
-        // @ts-ignore
-        gameState: toRaw(gameState)._rawValue,
-      },
-      replacer
-    )
-  );
+  send();
 };
 
 const diceHold = (e: MouseEvent): void => {
@@ -90,17 +110,7 @@ const diceHold = (e: MouseEvent): void => {
 
   if (e.target instanceof HTMLElement) {
     gameState.value.publicState.state.holdArr[e.target!.id] = true;
-    ws.send(
-      JSON.stringify(
-        {
-          type: 'SEND',
-          gameId,
-          // @ts-ignore
-          gameState: toRaw(gameState)._rawValue,
-        },
-        replacer
-      )
-    );
+    send();
   }
 };
 
@@ -118,17 +128,59 @@ const diceRoll = (e: MouseEvent) => {
   }
 
   gameState.value.publicState.state.diceRollCount++;
-  ws.send(
-    JSON.stringify(
-      {
-        type: 'SEND',
-        gameId,
+  send();
+};
+
+const fixScore = (e: MouseEvent): void => {
+  const isMyTurn =
+    gameState.value.userStates?.get(gameState.value.publicState.turn!)
+      ?.userName === userName;
+  if (!isMyTurn) return;
+
+  if (e.target instanceof HTMLElement) {
+    const scoreFixed = gameState.value.userStates?.get(
+      gameState.value.publicState.turn!
+    )?.state.scoreFixed;
+    const score = gameState.value.userStates?.get(
+      gameState.value.publicState.turn!
+    )?.state.score;
+
+    const diceArr = gameState.value.publicState?.state.diceArr;
+
+    // fixableチェック
+    if (scoreFixed[+e.target.id] === false) {
+      scoreFixed[+e.target.id] = true;
+      score[+e.target.id] =
         // @ts-ignore
-        gameState: toRaw(gameState)._rawValue,
-      },
-      replacer
-    )
-  );
+        diceArr.filter((v: number) => v === +e.target?.id + 1).length *
+        (+e.target?.id + 1);
+    }
+  }
+
+  //[] 終了処理
+  if (
+    ++gameState.value.publicState.state.turnCount >=
+    gameState.value.userStates.size * 12
+  ) {
+    alert('ゲーム終了');
+  }
+
+  // next turn
+  resetDice();
+  gameState.value.publicState.turn = nextUserId();
+  send();
+};
+
+const nextUserId = (): UserId => {
+  const turn = gameState.value.publicState.turn;
+  const userIds = [...gameState.value.userStates.keys()];
+  let index = userIds.findIndex((userId) => userId === turn);
+
+  if (++index >= userIds.length) {
+    index = 0;
+  }
+
+  return userIds[index];
 };
 </script>
 
@@ -139,20 +191,29 @@ const diceRoll = (e: MouseEvent) => {
     :message="gameState.publicState?.state.message"
     v-if="gameState.publicState?.turn !== null"
   />
+  <div v-else>
+    <a>{{ gameId }}</a
+    ><br />
+    <h1>share URL or <a @click="reload" class="reload">make new Room</a></h1>
+    <br />
+  </div>
+
   <Dice
     :diceArr="gameState.publicState?.state.diceArr"
     :holdArr="gameState.publicState?.state.holdArr"
     :diceRollCount="gameState.publicState?.state.diceRollCount"
-    :isMyTurn="
-      gameState.userStates?.get(gameState.publicState.turn!)?.userName ===
-      userName
-    "
+    :isMyTurn="gameState.userStates?.get(gameState.publicState.turn!)?.userName ===
+    userName"
     :diceHold="diceHold"
     :diceRoll="diceRoll"
   />
   <ScoreBoard
     :userStates="gameState.userStates"
     :turn="gameState.publicState?.turn"
+    :diceArr="gameState.publicState?.state.diceArr"
+    :fixScore="fixScore"
+    :isMyTurn="gameState.userStates?.get(gameState.publicState.turn!)?.userName ===
+    userName"
   />
   <button
     @click="start"
@@ -163,3 +224,10 @@ const diceRoll = (e: MouseEvent) => {
     Start
   </button>
 </template>
+
+<style scoped>
+.reload {
+  color: blue;
+  text-decoration: underline;
+}
+</style>
