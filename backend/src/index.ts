@@ -1,5 +1,11 @@
 import { WebSocketServer } from 'ws';
-import type { GameState, UserId } from '../../frontend/src/types';
+import type {
+  GameId,
+  GameState,
+  ReqMessage,
+  ResMessage,
+  UserId,
+} from '../../frontend/src/types';
 
 const color = {
   green: '\u001B[32m',
@@ -13,32 +19,7 @@ const port = Number(process.env.PORT ?? 4567);
 const wss = new WebSocketServer({ port });
 console.debug(`WebSocker Server Listen on ${port}`);
 
-type GameId = `GAME-${string}`;
-
 const gameStates = new Map<GameId, GameState>();
-
-type InMessage =
-  | {
-      type: 'JOIN';
-      gameId: GameId;
-      userName: string;
-    }
-  | {
-      type: 'NEXT';
-    }
-  | {
-      type: 'START';
-    };
-
-type OutMessage =
-  | {
-      type: 'GAMESTATE';
-      body: GameState;
-    }
-  | {
-      type: 'USERID';
-      body: UserId;
-    };
 
 wss.on('connection', (ws, req) => {
   ws.on('message', (rawMessage) => {
@@ -48,7 +29,7 @@ wss.on('connection', (ws, req) => {
     console.debug(rawMessage.toString());
 
     try {
-      const message = JSON.parse(rawMessage.toString()) as InMessage;
+      const message = JSON.parse(rawMessage.toString()) as ReqMessage;
       const userId =
         `USER-${req.socket.remoteAddress}:${req.socket.remotePort}` as UserId;
 
@@ -58,9 +39,10 @@ wss.on('connection', (ws, req) => {
           if (gameStates.has(message.gameId)) {
             // ゲームが始まっていないとき
             if (gameStates.get(message.gameId)?.publicState.turn === null) {
-              gameStates
-                .get(message.gameId)!
-                .userStates.set(userId, { userName: message.userName });
+              gameStates.get(message.gameId)!.userStates.set(userId, {
+                userName: message.userName,
+                state: {},
+              });
             }
           } else {
             // gameState初期化
@@ -68,7 +50,10 @@ wss.on('connection', (ws, req) => {
               publicState: { turn: null },
               userStates: new Map(),
             };
-            gameState.userStates.set(userId, { userName: message.userName });
+            gameState.userStates.set(userId, {
+              userName: message.userName,
+              state: {},
+            });
             gameStates.set(message.gameId, gameState);
           }
 
@@ -83,6 +68,7 @@ wss.on('connection', (ws, req) => {
 
         // [] START
         case 'START': {
+          // userStatesシャッフルする
           break;
         }
 
@@ -103,14 +89,14 @@ wss.on('connection', (ws, req) => {
 
   ws.on('close', () => {
     for (const [gameId, gameState] of gameStates) {
-      for (const [userId] of gameState.userStates) {
+      for (const [userId] of gameState!.userStates) {
         if (
           userId === `USER-${req.socket.remoteAddress}:${req.socket.remotePort}`
         ) {
-          gameState.userStates.delete(userId);
+          gameState!.userStates.delete(userId);
 
           // 誰もいなくなったときgameStateを消去
-          if (gameState.userStates.size === 0) {
+          if (gameState!.userStates.size === 0) {
             gameStates.delete(gameId);
           } else {
             broadcast({ type: 'GAMESTATE', body: gameState }, gameId);
@@ -125,7 +111,7 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-const broadcast = (message: OutMessage, gameId: GameId) => {
+const broadcast = (message: ResMessage, gameId: GameId) => {
   for (const userId of gameStates.get(gameId)!.userStates.keys()) {
     if (userId.startsWith('USER-')) {
       unicast(message, userId);
@@ -133,7 +119,7 @@ const broadcast = (message: OutMessage, gameId: GameId) => {
   }
 };
 
-const unicast = (message: OutMessage, userId: UserId) => {
+const unicast = (message: ResMessage, userId: UserId) => {
   for (const client of wss.clients) {
     if (
       // @ts-ignore
@@ -145,8 +131,8 @@ const unicast = (message: OutMessage, userId: UserId) => {
           JSON.stringify({
             type: 'GAMESTATE',
             body: {
-              publicState: message.body.publicState,
-              userStates: [...message.body.userStates],
+              publicState: message.body!.publicState,
+              userStates: [...message.body!.userStates],
             },
           })
         );
@@ -164,8 +150,8 @@ const unicast = (message: OutMessage, userId: UserId) => {
             ? {
                 type: 'GAMESTATE',
                 body: {
-                  publicState: message.body.publicState,
-                  userStates: [...message.body.userStates],
+                  publicState: message.body!.publicState,
+                  userStates: [...message.body!.userStates],
                 },
               }
             : message,
