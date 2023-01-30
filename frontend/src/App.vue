@@ -178,13 +178,15 @@ const fixScore = (e: MouseEvent, userId: UserId): void => {
     ++gameState.value.publicState.turnCount ===
     gameState.value.userStates.size * TURN
   ) {
+    // [] メッセージ変更
+    send();
     alert('END');
+  } else {
+    // next turn
+    resetDice();
+    gameState.value.publicState.turnUserId = nextUserId();
+    send();
   }
-
-  // next turn
-  resetDice();
-  gameState.value.publicState.turnUserId = nextUserId();
-  send();
 };
 
 const nextUserId = (): UserId => {

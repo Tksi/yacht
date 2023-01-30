@@ -29,7 +29,6 @@ const calcScore = (base: number): number => {
     </tr>
     <tr>
       <td>1</td>
-      <!-- //BUG (e) => fixScore(e, userId)が毎回発火するので、自分のターンに相手のスコアをクリックでも反応する -->
       <th
         v-for="[userId, userState] in userStates"
         :key="userId"

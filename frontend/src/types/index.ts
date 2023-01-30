@@ -1,10 +1,6 @@
+export type GameId = `GAME-${string}`;
+
 export type UserId = `USER-${string}`;
-
-export type UserState<T> = T & {
-  userName: string;
-};
-
-export type UserStates<T> = Map<UserId, UserState<T>>;
 
 export type GameState<T, U> =
   | {
@@ -15,7 +11,11 @@ export type GameState<T, U> =
     }
   | { [key: string]: never };
 
-export type GameId = `GAME-${string}`;
+export type UserStates<T> = Map<UserId, UserState<T>>;
+
+export type UserState<T> = T & {
+  userName: string;
+};
 
 export type ReqMessage<T, U> =
   | {
