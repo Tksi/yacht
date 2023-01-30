@@ -47,6 +47,12 @@ const calcScore = (base: number): number => {
         }}
       </th>
     </tr>
+    <tr class="header footer">
+      <td>63(+35)</td>
+      <th v-for="[userId, userState] in userStates" :key="userId" class="fixed">
+        {{ userState.score?.[6] }}
+      </th>
+    </tr>
     <tr class="footer">
       <td>sum&nbsp;</td>
       <th v-for="[userId, userState] in userStates" :key="userId">

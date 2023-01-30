@@ -28,7 +28,7 @@ export type StateUser = {
 };
 
 const gameTurn = 6;
-
+const diceNum = 5;
 const gameId = new URL(location.href).searchParams.get('gameId') as GameId;
 const setGameId = () =>
   (location.href = `${location.origin}?${new URLSearchParams([
@@ -100,10 +100,10 @@ ws.addEventListener('message', ({ data: JSONmessage }) => {
 });
 
 const resetDice = () => {
-  gameState.value.publicState.diceArr = new Array(5)
+  gameState.value.publicState.diceArr = new Array(diceNum)
     .fill(0)
-    .map(() => Math.trunc(Math.random() * gameTurn) + 1);
-  gameState.value.publicState.holdArr = new Array(5).fill(false);
+    .map(() => Math.trunc(Math.random() * diceNum) + 1);
+  gameState.value.publicState.holdArr = new Array(diceNum).fill(false);
   gameState.value.publicState.diceRollCount = 1;
 };
 
@@ -117,8 +117,8 @@ const start = () => {
 
   // スコア
   for (const [, userState] of gameState.value.userStates) {
-    userState.score = new Array(gameTurn).fill(0);
-    userState.scoreFixed = new Array(gameTurn).fill(false);
+    userState.score = new Array(gameTurn + 1).fill(0);
+    userState.scoreFixed = new Array(gameTurn + 1).fill(false);
   }
 
   // サイコロ
@@ -143,7 +143,7 @@ const diceRoll = () => {
   for (let i = 0; i < gameState.value.publicState.diceArr.length; i++) {
     if (gameState.value.publicState.holdArr[i] === false) {
       gameState.value.publicState.diceArr[i] =
-        Math.trunc(Math.random() * gameTurn) + 1;
+        Math.trunc(Math.random() * diceNum) + 1;
     }
   }
 
