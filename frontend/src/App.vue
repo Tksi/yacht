@@ -4,6 +4,7 @@ import { ref, toRaw } from 'vue';
 import Dice from './components/Dice.vue';
 import Msg from './components/Msg.vue';
 import ScoreBoard from './components/ScoreBoard.vue';
+import Turn from './components/Turn.vue';
 import type {
   GameId,
   GameState,
@@ -26,7 +27,7 @@ export type StateUser = {
   scoreFixed: boolean[];
 };
 
-const TURN = 6;
+const gameTurn = 6;
 
 const gameId = new URL(location.href).searchParams.get('gameId') as GameId;
 const setGameId = () =>
@@ -101,7 +102,7 @@ ws.addEventListener('message', ({ data: JSONmessage }) => {
 const resetDice = () => {
   gameState.value.publicState.diceArr = new Array(5)
     .fill(0)
-    .map(() => Math.trunc(Math.random() * TURN) + 1);
+    .map(() => Math.trunc(Math.random() * gameTurn) + 1);
   gameState.value.publicState.holdArr = new Array(5).fill(false);
   gameState.value.publicState.diceRollCount = 1;
 };
@@ -116,8 +117,8 @@ const start = () => {
 
   // スコア
   for (const [, userState] of gameState.value.userStates) {
-    userState.score = new Array(TURN).fill(0);
-    userState.scoreFixed = new Array(TURN).fill(false);
+    userState.score = new Array(gameTurn).fill(0);
+    userState.scoreFixed = new Array(gameTurn).fill(false);
   }
 
   // サイコロ
@@ -142,7 +143,7 @@ const diceRoll = () => {
   for (let i = 0; i < gameState.value.publicState.diceArr.length; i++) {
     if (gameState.value.publicState.holdArr[i] === false) {
       gameState.value.publicState.diceArr[i] =
-        Math.trunc(Math.random() * TURN) + 1;
+        Math.trunc(Math.random() * gameTurn) + 1;
     }
   }
 
@@ -170,16 +171,17 @@ const fixScore = (e: MouseEvent, userId: UserId, fixed: boolean): void => {
       (+e.target?.id + 1);
   }
 
-  //[] 終了処理
+  // 終了処理
   if (
-    ++gameState.value.publicState.turnCount ===
-    gameState.value.userStates.size * TURN
+    gameState.value.publicState.turnCount + 1 ===
+    gameState.value.userStates.size * gameTurn
   ) {
     // [] メッセージ変更
     send();
     alert('END');
   } else {
     // next turn
+    gameState.value.publicState.turnCount++;
     resetDice();
     gameState.value.publicState.turnUserId = nextUserId();
     send();
@@ -212,6 +214,16 @@ const nextUserId = (): UserId => {
     <br />
   </div>
 
+  <Turn
+    :turn="
+      gameState.publicState.turnCount === undefined
+        ? 0
+        : Math.trunc(
+            gameState.publicState.turnCount / gameState.userStates.size
+          ) + 1
+    "
+    :game-turn="gameTurn"
+  />
   <Dice
     :diceArr="gameState.publicState?.diceArr"
     :holdArr="gameState.publicState?.holdArr"
