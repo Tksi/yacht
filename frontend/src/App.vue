@@ -159,18 +159,20 @@ const fixScore = (
 ): void => {
   if (!isMyTurn() || userId !== myUserId || fixed) return;
 
+  const userState = gameState.value.userStates.get(
+    gameState.value.publicState.turnUserId!
+  )!;
+
   if (e.target instanceof HTMLElement) {
-    const scoreFixed = gameState.value.userStates?.get(
-      gameState.value.publicState.turnUserId!
-    )?.scoreFixed;
-    const score = gameState.value.userStates?.get(
-      gameState.value.publicState.turnUserId!
-    )?.score;
+    const scoreFixed = userState.scoreFixed;
+    const score = userState.score;
 
     scoreFixed![index] = true;
     score![index] = +e.target.textContent!;
 
-    //[] 63チェック
+    if (userState.score.slice(0, 6).reduce((b, a) => b + a) >= 63) {
+      userState.score[6] = 35;
+    }
   }
 
   // 終了処理
@@ -178,7 +180,6 @@ const fixScore = (
     gameState.value.publicState.turnCount + 1 ===
     gameState.value.userStates.size * gameTurn
   ) {
-    // [] メッセージ変更
     send();
     alert('END');
   } else {
