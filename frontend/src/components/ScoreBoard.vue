@@ -168,7 +168,7 @@ const calcScore = (base: (typeof roll)[number] | number): number => {
     </tr>
 
     <tr class="footer">
-      <td>sum</td>
+      <td>total</td>
       <th v-for="[userId, userState] in userStates" :key="userId">
         {{ userState.score?.reduce((b: any, a: any) => b + a) }}
       </th>

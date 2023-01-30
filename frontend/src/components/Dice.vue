@@ -14,13 +14,13 @@ defineProps<{
     v-for="[index, number] in Object.entries(diceArr ?? [])"
     :key="index"
     class="dice"
-    :class="{ dotted: isMyTurn, hold: holdArr[+index] ?? false }"
+    :class="{ holdable: isMyTurn, hold: holdArr[+index] ?? false }"
   >
     <span @click="diceHold" :id="index">{{ number }} </span>
   </span>
 
   <button v-if="isMyTurn && 3 - diceRollCount" @click="diceRoll">
-    Roll({{ 3 - diceRollCount }})
+    🎲({{ 3 - diceRollCount }})
   </button>
 </template>
 
@@ -45,8 +45,8 @@ defineProps<{
   text-align: center;
 }
 
-.dotted {
-  border: 5px dotted;
+.holdable {
+  border: 5px dotted orange;
 }
 
 .hold {
