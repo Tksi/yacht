@@ -7,7 +7,7 @@ const prop = defineProps<{
   turn: UserId | null;
   diceArr: number[];
   isMyTurn: boolean;
-  fixScore: (e: MouseEvent, userId: UserId) => void;
+  fixScore: (e: MouseEvent, userId: UserId, fixed: boolean) => void;
 }>();
 
 const calcScore = (base: number): number => {
@@ -27,7 +27,27 @@ const calcScore = (base: number): number => {
         {{ userState.userName }}
       </th>
     </tr>
-    <tr>
+    <tr v-for="i in 6" :key="i">
+      <td>{{ i }}</td>
+      <th
+        v-for="[userId, userState] in userStates"
+        :key="userId"
+        @click="(e) => fixScore(e, userId, userState.scoreFixed?.[i - 1])"
+        :class="{
+          fixable:
+            !userState.scoreFixed?.[i - 1] && turn === userId && isMyTurn,
+          fixed: userState.scoreFixed?.[i - 1],
+        }"
+        :id="String(i - 1)"
+      >
+        {{
+          turn === userId && !userState.scoreFixed?.[i - 1]
+            ? calcScore(i)
+            : userState.score?.[i - 1]
+        }}
+      </th>
+    </tr>
+    <!-- <tr>
       <td>1</td>
       <th
         v-for="[userId, userState] in userStates"
@@ -140,7 +160,7 @@ const calcScore = (base: number): number => {
             : userState.score?.[5]
         }}
       </th>
-    </tr>
+    </tr> -->
     <tr class="footer">
       <td>sum&nbsp;</td>
       <th v-for="[userId, userState] in userStates" :key="userId">

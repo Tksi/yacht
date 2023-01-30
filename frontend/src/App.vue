@@ -150,8 +150,8 @@ const diceRoll = () => {
   send();
 };
 
-const fixScore = (e: MouseEvent, userId: UserId): void => {
-  if (!isMyTurn() || userId !== myUserId) return;
+const fixScore = (e: MouseEvent, userId: UserId, fixed: boolean): void => {
+  if (!isMyTurn() || userId !== myUserId || fixed) return;
 
   if (e.target instanceof HTMLElement) {
     const scoreFixed = gameState.value.userStates?.get(
@@ -164,6 +164,8 @@ const fixScore = (e: MouseEvent, userId: UserId): void => {
     const diceArr = gameState.value.publicState?.diceArr;
 
     // fixableチェック
+    console.log(scoreFixed?.[+e.target.id]);
+
     if (scoreFixed?.[+e.target.id] === false) {
       scoreFixed[+e.target.id] = true;
       score![+e.target.id] =
