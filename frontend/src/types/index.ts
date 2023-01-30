@@ -1,27 +1,23 @@
 export type UserId = `USER-${string}`;
 
-export type UserState = {
+export type UserState<T> = T & {
   userName: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  state: { [key: string]: any };
 };
 
-export type UserStates = Map<UserId, UserState>;
+export type UserStates<T> = Map<UserId, UserState<T>>;
 
-export type GameState =
+export type GameState<T, U> =
   | {
-      publicState: {
-        turn: UserId | null;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        state: { [key: string]: any };
+      publicState: T & {
+        turnUserId: UserId | null;
       };
-      userStates: UserStates;
+      userStates: UserStates<U>;
     }
   | { [key: string]: never };
 
 export type GameId = `GAME-${string}`;
 
-export type ReqMessage =
+export type ReqMessage<T, U> =
   | {
       type: 'JOIN';
       gameId: GameId;
@@ -30,13 +26,13 @@ export type ReqMessage =
   | {
       type: 'SEND';
       gameId: GameId;
-      gameState: GameState;
+      gameState: GameState<T, U>;
     };
 
-export type ResMessage =
+export type ResMessage<T, U> =
   | {
       type: 'GAMESTATE';
-      body: GameState;
+      body: GameState<T, U>;
     }
   | {
       type: 'USERID';

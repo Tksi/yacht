@@ -16,11 +16,13 @@ const color = {
   reset: '\u001B[0m',
 };
 
+type AnyObj = { [key: string]: any };
+
 const port = Number(process.env.PORT ?? 4567);
 const wss = new WebSocketServer({ port });
 console.debug(`WebSocker Server Listen on ${port}`);
 
-const gameStates = new Map<GameId, GameState>();
+const gameStates = new Map<GameId, GameState<AnyObj, AnyObj>>();
 
 wss.on('connection', (ws, req) => {
   ws.on('message', (rawMessage) => {
@@ -30,7 +32,10 @@ wss.on('connection', (ws, req) => {
     // console.debug(rawMessage.toString());
 
     try {
-      const message = JSON.parse(rawMessage.toString(), reviver) as ReqMessage;
+      const message = JSON.parse(rawMessage.toString(), reviver) as ReqMessage<
+        AnyObj,
+        AnyObj
+      >;
       console.debug(message);
       const userId =
         `USER-${req.socket.remoteAddress}:${req.socket.remotePort}` as UserId;
@@ -45,8 +50,8 @@ wss.on('connection', (ws, req) => {
             });
           } else {
             // gameState初期化
-            const gameState: GameState = {
-              publicState: { turn: null, state: {} },
+            const gameState: GameState<AnyObj, AnyObj> = {
+              publicState: { turnUserId: null },
               userStates: new Map(),
             };
             gameState.userStates.set(userId, {
@@ -110,13 +115,16 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-const broadcast = (message: ResMessage, gameState: GameState) => {
+const broadcast = <T, U>(
+  message: ResMessage<T, U>,
+  gameState: GameState<T, U>
+) => {
   for (const userId of gameState.userStates.keys()) {
     unicast(message, userId);
   }
 };
 
-const unicast = (message: ResMessage, userId: UserId) => {
+const unicast = <T, U>(message: ResMessage<T, U>, userId: UserId) => {
   for (const client of wss.clients) {
     if (
       // @ts-ignore

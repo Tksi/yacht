@@ -13,21 +13,37 @@ import type {
 } from './types';
 import { replacer, reviver } from '@/lib/jsonMap';
 
-const gameId = new URL(location.href).searchParams.get('gameId') as GameId;
+export type StatePublic = {
+  diceArr: number[];
+  holdArr: boolean[];
+  diceRollCount: number;
+  turnCount: number;
+  message: string;
+};
 
-const reload = () =>
+export type StateUser = {
+  score: number[];
+  scoreFixed: boolean[];
+};
+
+const TURN = 6;
+
+const gameId = new URL(location.href).searchParams.get('gameId') as GameId;
+const setGameId = () =>
   (location.href = `${location.origin}?${new URLSearchParams([
     ['gameId', `GAME-${uuidv4()}`],
   ]).toString()}`);
 
 if (gameId === null) {
-  reload();
+  setGameId();
 }
 
 const ws = new WebSocket(import.meta.env.VITE_WS ?? 'ws://localhost:4567');
 
-let gameState = ref<GameState>({});
+let gameState = ref<GameState<StatePublic, StateUser>>({});
 let userName = localStorage.getItem('userName');
+let myUserId: UserId;
+const isMyTurn = () => gameState.value.publicState?.turnUserId === myUserId;
 
 const send = () =>
   ws.send(
@@ -48,7 +64,7 @@ ws.addEventListener('open', () => {
   }
 
   localStorage.setItem('userName', userName);
-  const joinMessage: ReqMessage = {
+  const joinMessage: ReqMessage<StatePublic, StateUser> = {
     type: 'JOIN',
     gameId,
     userName,
@@ -58,10 +74,19 @@ ws.addEventListener('open', () => {
 
 ws.addEventListener('message', ({ data: JSONmessage }) => {
   try {
-    const message = JSON.parse(JSONmessage, reviver) as ResMessage;
+    const message = JSON.parse(JSONmessage, reviver) as ResMessage<
+      StatePublic,
+      StateUser
+    >;
     console.log(message);
 
     switch (message.type) {
+      case 'USERID': {
+        myUserId = message.body;
+
+        break;
+      }
+
       case 'GAMESTATE': {
         gameState.value = message.body;
 
@@ -74,83 +99,74 @@ ws.addEventListener('message', ({ data: JSONmessage }) => {
 });
 
 const resetDice = () => {
-  gameState.value.publicState.state.diceArr = new Array(5)
+  gameState.value.publicState.diceArr = new Array(5)
     .fill(0)
-    .map(() => Math.trunc(Math.random() * 6) + 1);
-  gameState.value.publicState.state.holdArr = new Array(5).fill(false);
-  gameState.value.publicState.state.diceRollCount = 1;
+    .map(() => Math.trunc(Math.random() * TURN) + 1);
+  gameState.value.publicState.holdArr = new Array(5).fill(false);
+  gameState.value.publicState.diceRollCount = 1;
 };
 
 const start = () => {
   const userIds = [...gameState.value.userStates.keys()];
 
   // ターン
-  gameState.value.publicState.turn =
+  gameState.value.publicState.turnUserId =
     userIds[Math.trunc(Math.random() * userIds.length)];
-  gameState.value.publicState.state.turnCount = 0;
+  gameState.value.publicState.turnCount = 0;
 
   // スコア
   for (const [, userState] of gameState.value.userStates) {
-    userState.state.score = new Array(6).fill(0);
-    userState.state.scoreFixed = new Array(6).fill(false);
+    userState.score = new Array(TURN).fill(0);
+    userState.scoreFixed = new Array(TURN).fill(false);
   }
 
   // サイコロ
   resetDice();
 
-  gameState.value.publicState.state.message = 'click to hold';
+  gameState.value.publicState.message = 'click to hold';
   send();
 };
 
 const diceHold = (e: MouseEvent): void => {
-  const isMyTurn =
-    gameState.value.userStates?.get(gameState.value.publicState.turn!)
-      ?.userName === userName;
-  if (!isMyTurn) return;
+  if (!isMyTurn()) return;
 
   if (e.target instanceof HTMLElement) {
-    gameState.value.publicState.state.holdArr[e.target!.id] = true;
+    gameState.value.publicState.holdArr[+e.target.id] = true;
     send();
   }
 };
 
 const diceRoll = () => {
-  const isMyTurn =
-    gameState.value.userStates?.get(gameState.value.publicState.turn!)
-      ?.userName === userName;
-  if (!isMyTurn) return;
+  if (!isMyTurn()) return;
 
-  for (let i = 0; i < gameState.value.publicState.state.diceArr.length; i++) {
-    if (gameState.value.publicState.state.holdArr[i] === false) {
-      gameState.value.publicState.state.diceArr[i] =
-        Math.trunc(Math.random() * 6) + 1;
+  for (let i = 0; i < gameState.value.publicState.diceArr.length; i++) {
+    if (gameState.value.publicState.holdArr[i] === false) {
+      gameState.value.publicState.diceArr[i] =
+        Math.trunc(Math.random() * TURN) + 1;
     }
   }
 
-  gameState.value.publicState.state.diceRollCount++;
+  gameState.value.publicState.diceRollCount++;
   send();
 };
 
-const fixScore = (e: MouseEvent): void => {
-  const isMyTurn =
-    gameState.value.userStates?.get(gameState.value.publicState.turn!)
-      ?.userName === userName;
-  if (!isMyTurn) return;
+const fixScore = (e: MouseEvent, userId: UserId): void => {
+  if (!isMyTurn() || userId !== myUserId) return;
 
   if (e.target instanceof HTMLElement) {
     const scoreFixed = gameState.value.userStates?.get(
-      gameState.value.publicState.turn!
-    )?.state.scoreFixed;
+      gameState.value.publicState.turnUserId!
+    )?.scoreFixed;
     const score = gameState.value.userStates?.get(
-      gameState.value.publicState.turn!
-    )?.state.score;
+      gameState.value.publicState.turnUserId!
+    )?.score;
 
-    const diceArr = gameState.value.publicState?.state.diceArr;
+    const diceArr = gameState.value.publicState?.diceArr;
 
     // fixableチェック
-    if (scoreFixed[+e.target.id] === false) {
+    if (scoreFixed?.[+e.target.id] === false) {
       scoreFixed[+e.target.id] = true;
-      score[+e.target.id] =
+      score![+e.target.id] =
         // @ts-ignore
         diceArr.filter((v: number) => v === +e.target?.id + 1).length *
         (+e.target?.id + 1);
@@ -159,20 +175,20 @@ const fixScore = (e: MouseEvent): void => {
 
   //[] 終了処理
   if (
-    ++gameState.value.publicState.state.turnCount >=
-    gameState.value.userStates.size * 12
+    ++gameState.value.publicState.turnCount ===
+    gameState.value.userStates.size * TURN
   ) {
-    alert('ゲーム終了');
+    alert('END');
   }
 
   // next turn
   resetDice();
-  gameState.value.publicState.turn = nextUserId();
+  gameState.value.publicState.turnUserId = nextUserId();
   send();
 };
 
 const nextUserId = (): UserId => {
-  const turn = gameState.value.publicState.turn;
+  const turn = gameState.value.publicState.turnUserId;
   const userIds = [...gameState.value.userStates.keys()];
   let index = userIds.findIndex((userId) => userId === turn);
 
@@ -186,39 +202,37 @@ const nextUserId = (): UserId => {
 
 <template>
   <Msg
-    :isMyTurn="gameState.userStates?.get(gameState.publicState.turn!)?.userName ===
-    userName"
-    :message="gameState.publicState?.state.message"
-    v-if="gameState.publicState?.turn !== null"
+    :isMyTurn="isMyTurn()"
+    :message="gameState.publicState?.message"
+    v-if="gameState.publicState?.turnUserId !== null"
   />
   <div v-else>
     <a>{{ gameId }}</a
     ><br />
-    <h1>share URL or <a @click="reload" class="reload">make new Room</a></h1>
+    <h1>share URL or <a @click="setGameId" class="reload">make new Room</a></h1>
     <br />
   </div>
 
   <Dice
-    :diceArr="gameState.publicState?.state.diceArr"
-    :holdArr="gameState.publicState?.state.holdArr"
-    :diceRollCount="gameState.publicState?.state.diceRollCount"
-    :isMyTurn="gameState.userStates?.get(gameState.publicState.turn!)?.userName ===
-    userName"
+    :diceArr="gameState.publicState?.diceArr"
+    :holdArr="gameState.publicState?.holdArr"
+    :diceRollCount="gameState.publicState?.diceRollCount"
+    :isMyTurn="isMyTurn()"
     :diceHold="diceHold"
     :diceRoll="diceRoll"
   />
   <ScoreBoard
     :userStates="gameState.userStates"
-    :turn="gameState.publicState?.turn"
-    :diceArr="gameState.publicState?.state.diceArr"
+    :turn="gameState.publicState?.turnUserId"
+    :diceArr="gameState.publicState?.diceArr"
     :fixScore="fixScore"
-    :isMyTurn="gameState.userStates?.get(gameState.publicState.turn!)?.userName ===
-    userName"
+    :isMyTurn="isMyTurn()"
   />
   <button
     @click="start"
     v-if="
-      gameState.publicState?.turn === null && gameState.userStates?.size >= 2
+      gameState.publicState?.turnUserId === null &&
+      gameState.userStates?.size >= 2
     "
   >
     Start

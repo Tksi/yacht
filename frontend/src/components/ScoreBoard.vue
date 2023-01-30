@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import type { UserId, UserStates } from '../types/index';
+import type { StateUser } from '@/App.vue';
 
 const prop = defineProps<{
-  userStates: UserStates;
+  userStates: UserStates<StateUser>;
   turn: UserId | null;
   diceArr: number[];
   isMyTurn: boolean;
-  fixScore: (e: MouseEvent) => void;
+  fixScore: (e: MouseEvent, userId: UserId) => void;
 }>();
 
 const calcScore = (base: number): number => {
@@ -28,21 +29,21 @@ const calcScore = (base: number): number => {
     </tr>
     <tr>
       <td>1</td>
+      <!-- //BUG (e) => fixScore(e, userId)が毎回発火するので、自分のターンに相手のスコアをクリックでも反応する -->
       <th
         v-for="[userId, userState] in userStates"
         :key="userId"
-        @click="fixScore"
+        @click="(e) => fixScore(e, userId)"
         :class="{
-          fixable:
-            !userState.state.scoreFixed?.[0] && turn === userId && isMyTurn,
-          fixed: userState.state.scoreFixed?.[0],
+          fixable: !userState.scoreFixed?.[0] && turn === userId && isMyTurn,
+          fixed: userState.scoreFixed?.[0],
         }"
         id="0"
       >
         {{
-          turn === userId && !userState.state.scoreFixed?.[0]
+          turn === userId && !userState.scoreFixed?.[0]
             ? calcScore(1)
-            : userState.state.score?.[0]
+            : userState.score?.[0]
         }}
       </th>
     </tr>
@@ -51,18 +52,17 @@ const calcScore = (base: number): number => {
       <th
         v-for="[userId, userState] in userStates"
         :key="userId"
-        @click="fixScore"
+        @click="(e) => fixScore(e, userId)"
         :class="{
-          fixable:
-            !userState.state.scoreFixed?.[1] && turn === userId && isMyTurn,
-          fixed: userState.state.scoreFixed?.[1],
+          fixable: !userState.scoreFixed?.[1] && turn === userId && isMyTurn,
+          fixed: userState.scoreFixed?.[1],
         }"
         id="1"
       >
         {{
-          turn === userId && !userState.state.scoreFixed?.[1]
+          turn === userId && !userState.scoreFixed?.[1]
             ? calcScore(2)
-            : userState.state.score?.[1]
+            : userState.score?.[1]
         }}
       </th>
     </tr>
@@ -71,18 +71,17 @@ const calcScore = (base: number): number => {
       <th
         v-for="[userId, userState] in userStates"
         :key="userId"
-        @click="fixScore"
+        @click="(e) => fixScore(e, userId)"
         :class="{
-          fixable:
-            !userState.state.scoreFixed?.[2] && turn === userId && isMyTurn,
-          fixed: userState.state.scoreFixed?.[2],
+          fixable: !userState.scoreFixed?.[2] && turn === userId && isMyTurn,
+          fixed: userState.scoreFixed?.[2],
         }"
         id="2"
       >
         {{
-          turn === userId && !userState.state.scoreFixed?.[2]
+          turn === userId && !userState.scoreFixed?.[2]
             ? calcScore(3)
-            : userState.state.score?.[2]
+            : userState.score?.[2]
         }}
       </th>
     </tr>
@@ -91,18 +90,17 @@ const calcScore = (base: number): number => {
       <th
         v-for="[userId, userState] in userStates"
         :key="userId"
-        @click="fixScore"
+        @click="(e) => fixScore(e, userId)"
         :class="{
-          fixable:
-            !userState.state.scoreFixed?.[3] && turn === userId && isMyTurn,
-          fixed: userState.state.scoreFixed?.[3],
+          fixable: !userState.scoreFixed?.[3] && turn === userId && isMyTurn,
+          fixed: userState.scoreFixed?.[3],
         }"
         id="3"
       >
         {{
-          turn === userId && !userState.state.scoreFixed?.[3]
+          turn === userId && !userState.scoreFixed?.[3]
             ? calcScore(4)
-            : userState.state.score?.[3]
+            : userState.score?.[3]
         }}
       </th>
     </tr>
@@ -111,18 +109,17 @@ const calcScore = (base: number): number => {
       <th
         v-for="[userId, userState] in userStates"
         :key="userId"
-        @click="fixScore"
+        @click="(e) => fixScore(e, userId)"
         :class="{
-          fixable:
-            !userState.state.scoreFixed?.[4] && turn === userId && isMyTurn,
-          fixed: userState.state.scoreFixed?.[4],
+          fixable: !userState.scoreFixed?.[4] && turn === userId && isMyTurn,
+          fixed: userState.scoreFixed?.[4],
         }"
         id="4"
       >
         {{
-          turn === userId && !userState.state.scoreFixed?.[4]
+          turn === userId && !userState.scoreFixed?.[4]
             ? calcScore(5)
-            : userState.state.score?.[4]
+            : userState.score?.[4]
         }}
       </th>
     </tr>
@@ -131,25 +128,24 @@ const calcScore = (base: number): number => {
       <th
         v-for="[userId, userState] in userStates"
         :key="userId"
-        @click="fixScore"
+        @click="(e) => fixScore(e, userId)"
         :class="{
-          fixable:
-            !userState.state.scoreFixed?.[5] && turn === userId && isMyTurn,
-          fixed: userState.state.scoreFixed?.[5],
+          fixable: !userState.scoreFixed?.[5] && turn === userId && isMyTurn,
+          fixed: userState.scoreFixed?.[5],
         }"
         id="5"
       >
         {{
-          turn === userId && !userState.state.scoreFixed?.[5]
+          turn === userId && !userState.scoreFixed?.[5]
             ? calcScore(6)
-            : userState.state.score?.[5]
+            : userState.score?.[5]
         }}
       </th>
     </tr>
     <tr class="footer">
       <td>sum&nbsp;</td>
       <th v-for="[userId, userState] in userStates" :key="userId">
-        {{ userState.state.score?.reduce((b: any, a: any) => b + a) }}
+        {{ userState.score?.reduce((b: any, a: any) => b + a) }}
       </th>
     </tr>
   </table>
