@@ -27,7 +27,7 @@ export type StateUser = {
   scoreFixed: boolean[];
 };
 
-const gameTurn = 6;
+const gameTurn = 12;
 const diceNum = 5;
 const gameId = new URL(location.href).searchParams.get('gameId') as GameId;
 const setGameId = () =>
@@ -102,7 +102,8 @@ ws.addEventListener('message', ({ data: JSONmessage }) => {
 const resetDice = () => {
   gameState.value.publicState.diceArr = new Array(diceNum)
     .fill(0)
-    .map(() => Math.trunc(Math.random() * diceNum) + 1);
+    .map(() => Math.trunc(Math.random() * 6) + 1);
+  gameState.value.publicState.diceArr = [1, 2, 4, 5, 6];
   gameState.value.publicState.holdArr = new Array(diceNum).fill(false);
   gameState.value.publicState.diceRollCount = 1;
 };
@@ -143,7 +144,7 @@ const diceRoll = () => {
   for (let i = 0; i < gameState.value.publicState.diceArr.length; i++) {
     if (gameState.value.publicState.holdArr[i] === false) {
       gameState.value.publicState.diceArr[i] =
-        Math.trunc(Math.random() * diceNum) + 1;
+        Math.trunc(Math.random() * 6) + 1;
     }
   }
 
@@ -151,7 +152,12 @@ const diceRoll = () => {
   send();
 };
 
-const fixScore = (e: MouseEvent, userId: UserId, fixed: boolean): void => {
+const fixScore = (
+  e: MouseEvent,
+  userId: UserId,
+  fixed: boolean,
+  index: number
+): void => {
   if (!isMyTurn() || userId !== myUserId || fixed) return;
 
   if (e.target instanceof HTMLElement) {
@@ -162,13 +168,10 @@ const fixScore = (e: MouseEvent, userId: UserId, fixed: boolean): void => {
       gameState.value.publicState.turnUserId!
     )?.score;
 
-    const diceArr = gameState.value.publicState?.diceArr;
+    scoreFixed![index] = true;
+    score![index] = +e.target.textContent!;
 
-    scoreFixed![+e.target.id] = true;
-    score![+e.target.id] =
-      // @ts-ignore
-      diceArr.filter((v: number) => v === +e.target?.id + 1).length *
-      (+e.target?.id + 1);
+    //[] 63チェック
   }
 
   // 終了処理
@@ -216,7 +219,7 @@ const nextUserId = (): UserId => {
 
   <Turn
     :turn="
-      gameState.publicState.turnCount === undefined
+      gameState.publicState?.turnCount === undefined
         ? 0
         : Math.trunc(
             gameState.publicState.turnCount / gameState.userStates.size
