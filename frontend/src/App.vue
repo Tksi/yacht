@@ -163,16 +163,11 @@ const fixScore = (e: MouseEvent, userId: UserId, fixed: boolean): void => {
 
     const diceArr = gameState.value.publicState?.diceArr;
 
-    // fixableチェック
-    console.log(scoreFixed?.[+e.target.id]);
-
-    if (scoreFixed?.[+e.target.id] === false) {
-      scoreFixed[+e.target.id] = true;
-      score![+e.target.id] =
-        // @ts-ignore
-        diceArr.filter((v: number) => v === +e.target?.id + 1).length *
-        (+e.target?.id + 1);
-    }
+    scoreFixed![+e.target.id] = true;
+    score![+e.target.id] =
+      // @ts-ignore
+      diceArr.filter((v: number) => v === +e.target?.id + 1).length *
+      (+e.target?.id + 1);
   }
 
   //[] 終了処理
