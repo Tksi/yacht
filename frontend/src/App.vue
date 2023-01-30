@@ -103,7 +103,6 @@ const resetDice = () => {
   gameState.value.publicState.diceArr = new Array(diceNum)
     .fill(0)
     .map(() => Math.trunc(Math.random() * 6) + 1);
-  gameState.value.publicState.diceArr = [1, 2, 4, 5, 6];
   gameState.value.publicState.holdArr = new Array(diceNum).fill(false);
   gameState.value.publicState.diceRollCount = 1;
 };
