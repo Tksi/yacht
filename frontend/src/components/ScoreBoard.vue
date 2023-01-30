@@ -24,14 +24,6 @@ const roll = [
   'Yacht(50)',
 ] as const;
 
-const checkStraight = (arr: readonly number[]): boolean => {
-  const sortedArr = [...arr].sort();
-
-  return sortedArr.every((v, i) =>
-    i === 0 ? true : v === sortedArr[i - 1] + 1
-  );
-};
-
 const calcScore = (base: (typeof roll)[number] | number): number => {
   if (typeof base === 'number') {
     return prop.diceArr.filter((num) => num === base).length * base;
@@ -71,15 +63,15 @@ const calcScore = (base: (typeof roll)[number] | number): number => {
     }
 
     case 'S.Str(15)': {
-      if (diceSet.size === 4 && checkStraight([...diceSet])) {
-        return 15;
-      }
+      const count = [...diceSet]
+        .sort()
+        .map((v, i) => v - i)
+        .reduce<{ [key: string]: number }>(
+          (a, b) => ({ ...a, [String(b)]: (a[String(b)] ?? 0) + 1 }),
+          {}
+        );
 
-      if (
-        diceSet.size === 5 &&
-        (checkStraight(sortedDiceArr.slice(0, 4)) ||
-          checkStraight(sortedDiceArr.slice(1, 5)))
-      ) {
+      if (Object.values(count).reduce((b, a) => Math.max(b, a)) >= 4) {
         return 15;
       }
 
@@ -87,7 +79,11 @@ const calcScore = (base: (typeof roll)[number] | number): number => {
     }
 
     case 'B.Str(30)': {
-      if (checkStraight(prop.diceArr)) {
+      if (
+        sortedDiceArr.every((v, i) =>
+          i === 0 ? true : v === sortedDiceArr[i - 1] + 1
+        )
+      ) {
         return 30;
       }
 
