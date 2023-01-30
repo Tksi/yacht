@@ -19,9 +19,9 @@ const roll = [
   'Chance',
   '4Dice',
   'FullHouse',
-  'S.Str',
-  'B.Str',
-  'Yacht',
+  'S.Str(15)',
+  'B.Str(30)',
+  'Yacht(50)',
 ] as const;
 
 const checkStraight = (arr: readonly number[]): boolean => {
@@ -70,7 +70,7 @@ const calcScore = (base: (typeof roll)[number] | number): number => {
       return 0;
     }
 
-    case 'S.Str': {
+    case 'S.Str(15)': {
       if (diceSet.size === 4 && checkStraight([...diceSet])) {
         return 15;
       }
@@ -86,7 +86,7 @@ const calcScore = (base: (typeof roll)[number] | number): number => {
       return 0;
     }
 
-    case 'B.Str': {
+    case 'B.Str(30)': {
       if (checkStraight(prop.diceArr)) {
         return 30;
       }
@@ -94,7 +94,7 @@ const calcScore = (base: (typeof roll)[number] | number): number => {
       return 0;
     }
 
-    case 'Yacht': {
+    case 'Yacht(50)': {
       if (diceSet.size === 1) {
         return 50;
       }
@@ -138,9 +138,15 @@ const calcScore = (base: (typeof roll)[number] | number): number => {
         }}
       </th>
     </tr>
-    <tr class="header footer">
-      <td>63(+35)</td>
-      <th v-for="[userId, userState] in userStates" :key="userId" class="fixed">
+    <tr class="footer">
+      <td>sum</td>
+      <th v-for="[userId, userState] in userStates" :key="userId">
+        {{ userState.score?.reduce((b, a) => b + a) }}
+      </th>
+    </tr>
+    <tr class="header">
+      <td>63↑(35)</td>
+      <th v-for="[userId, userState] in userStates" :key="userId">
         {{ userState.score?.[6] }}
       </th>
     </tr>
