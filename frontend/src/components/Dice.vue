@@ -22,7 +22,7 @@ defineProps<{
       <span @click="diceHold" :id="index">{{ number }} </span>
     </span>
     <button v-if="isMyTurn && 3 - diceRollCount" @click="diceRoll" id="roll">
-      🎲({{ 3 - diceRollCount }})
+      🎲{{ 3 - diceRollCount }}
     </button>
   </div>
 </template>
