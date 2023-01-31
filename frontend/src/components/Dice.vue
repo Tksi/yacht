@@ -36,7 +36,6 @@ defineProps<{
 }
 .dice {
   font-family: 'Lato', sans-serif;
-  line-height: 4rem;
   display: inline-flex;
   justify-content: center;
   align-items: center;
@@ -50,12 +49,6 @@ defineProps<{
   margin: 5px;
   background-color: white;
   box-shadow: 7px 7px 1px rgb(184, 184, 185);
-}
-
-.dice > span {
-  width: 100%;
-  height: 90%;
-  text-align: center;
 }
 
 .holdable {
