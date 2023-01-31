@@ -4,7 +4,6 @@ import { ref, toRaw } from 'vue';
 import Dice from './components/Dice.vue';
 import Msg from './components/Msg.vue';
 import ScoreBoard from './components/ScoreBoard.vue';
-import Turn from './components/Turn.vue';
 import type {
   GameId,
   GameState,
@@ -13,6 +12,7 @@ import type {
   UserId,
 } from './types';
 import { replacer, reviver } from '@/lib/jsonMap';
+import { shuffleArr } from '@/lib/shuffleArr';
 
 export type StatePublic = {
   diceArr: number[];
@@ -111,8 +111,12 @@ const start = () => {
   const userIds = [...gameState.value.userStates.keys()];
 
   // ターン
-  gameState.value.publicState.turnUserId =
-    userIds[Math.trunc(Math.random() * userIds.length)];
+  gameState.value.userStates = new Map(
+    shuffleArr([...gameState.value.userStates])
+  );
+  gameState.value.publicState.turnUserId = [
+    ...gameState.value.userStates,
+  ][0][0];
   gameState.value.publicState.turnCount = 0;
 
   // スコア
@@ -180,6 +184,7 @@ const fixScore = (
     gameState.value.publicState.turnCount + 1 ===
     gameState.value.userStates.size * gameTurn
   ) {
+    gameState.value.publicState.turnUserId = null;
     send();
     alert('END');
   } else {
@@ -217,16 +222,6 @@ const nextUserId = (): UserId => {
     <br />
   </div>
 
-  <Turn
-    :turn="
-      gameState.publicState?.turnCount === undefined
-        ? 0
-        : Math.trunc(
-            gameState.publicState.turnCount / gameState.userStates.size
-          ) + 1
-    "
-    :game-turn="gameTurn"
-  />
   <Dice
     :diceArr="gameState.publicState?.diceArr"
     :holdArr="gameState.publicState?.holdArr"
@@ -237,10 +232,18 @@ const nextUserId = (): UserId => {
   />
   <ScoreBoard
     :userStates="gameState.userStates"
-    :turn="gameState.publicState?.turnUserId"
+    :turnUserId="gameState.publicState?.turnUserId"
     :diceArr="gameState.publicState?.diceArr"
     :fixScore="fixScore"
     :isMyTurn="isMyTurn()"
+    :turn="
+      gameState.publicState?.turnCount === undefined
+        ? 0
+        : Math.trunc(
+            gameState.publicState.turnCount / gameState.userStates.size
+          ) + 1
+    "
+    :gameTurn="gameTurn"
   />
   <button
     @click="start"

@@ -4,9 +4,11 @@ import type { StateUser } from '@/App.vue';
 
 const prop = defineProps<{
   userStates: UserStates<StateUser>;
-  turn: UserId | null;
+  turnUserId: UserId | null;
   diceArr: number[];
   isMyTurn: boolean;
+  turn: number;
+  gameTurn: number;
   fixScore: (
     e: MouseEvent,
     userId: UserId,
@@ -104,11 +106,11 @@ const calcScore = (base: (typeof roll)[number] | number): number => {
 <template>
   <table class="scoreBoard">
     <tr class="header">
-      <th></th>
+      <th>{{ `Turn ${turn}/${gameTurn}` }}</th>
       <th
         v-for="[userId, userState] in userStates"
         :key="userId"
-        :class="{ active: userId === turn }"
+        :class="{ active: userId === turnUserId }"
       >
         {{ userState.userName }}
       </th>
@@ -123,25 +125,25 @@ const calcScore = (base: (typeof roll)[number] | number): number => {
         "
         :class="{
           fixable:
-            !userState.scoreFixed?.[i - 1] && turn === userId && isMyTurn,
+            !userState.scoreFixed?.[i - 1] && turnUserId === userId && isMyTurn,
           fixed: userState.scoreFixed?.[i - 1],
         }"
       >
         {{
-          turn === userId && !userState.scoreFixed?.[i - 1]
+          turnUserId === userId && !userState.scoreFixed?.[i - 1]
             ? calcScore(i)
             : userState.score?.[i - 1]
         }}
       </th>
     </tr>
     <tr class="footer">
-      <td>sum</td>
+      <th>sum</th>
       <th v-for="[userId, userState] in userStates" :key="userId">
         {{ userState.score?.reduce((b, a) => b + a) }}
       </th>
     </tr>
     <tr class="header">
-      <td>63↑(35)</td>
+      <th>63+(35)</th>
       <th v-for="[userId, userState] in userStates" :key="userId">
         {{ userState.score?.[6] }}
       </th>
@@ -157,12 +159,12 @@ const calcScore = (base: (typeof roll)[number] | number): number => {
         "
         :class="{
           fixable:
-            !userState.scoreFixed?.[i + 6] && turn === userId && isMyTurn,
+            !userState.scoreFixed?.[i + 6] && turnUserId === userId && isMyTurn,
           fixed: userState.scoreFixed?.[i + 6],
         }"
       >
         {{
-          turn === userId && !userState.scoreFixed?.[i + 6]
+          turnUserId === userId && !userState.scoreFixed?.[i + 6]
             ? calcScore(roll[i - 1])
             : userState.score?.[i + 6]
         }}
@@ -170,7 +172,7 @@ const calcScore = (base: (typeof roll)[number] | number): number => {
     </tr>
 
     <tr class="footer">
-      <td>total</td>
+      <th>total</th>
       <th v-for="[userId, userState] in userStates" :key="userId">
         {{ userState.score?.reduce((b: any, a: any) => b + a) }}
       </th>
@@ -179,6 +181,12 @@ const calcScore = (base: (typeof roll)[number] | number): number => {
 </template>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Slabo+27px&display=swap');
+.scoreBoard {
+  font-family: 'Slabo 27px', serif;
+  /* line-height: 2rem; */
+}
+
 .fixable {
   box-shadow: inset 0 0 10px orange;
 }
