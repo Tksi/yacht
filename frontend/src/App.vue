@@ -184,7 +184,6 @@ const fixScore = (
   ) {
     gameState.value.publicState.turnUserId = null;
     send();
-    alert('END');
   } else {
     // next turn
     gameState.value.publicState.turnCount++;

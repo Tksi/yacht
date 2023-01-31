@@ -15,6 +15,8 @@ defineProps<{
       v-for="[index, number] in Object.entries(diceArr ?? [])"
       :key="index"
       class="dice"
+      @click="diceHold"
+      :id="index"
       :class="{ holdable: isMyTurn, hold: holdArr[+index] ?? false }"
     >
       <span @click="diceHold" :id="index">{{ number }} </span>
