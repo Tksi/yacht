@@ -42,21 +42,17 @@ wss.on('connection', (ws, req) => {
 
       switch (message.type) {
         case 'JOIN': {
-          // すでにgameStateがあるとき
           if (gameStates.has(message.gameId)) {
             gameStates.get(message.gameId)!.userStates.set(userId, {
               userName: message.userName,
-              state: {},
             });
           } else {
-            // gameState初期化
             const gameState: GameState<AnyObj, AnyObj> = {
               publicState: { turnUserId: null },
               userStates: new Map(),
             };
             gameState.userStates.set(userId, {
               userName: message.userName,
-              state: {},
             });
             gameStates.set(message.gameId, gameState);
           }
@@ -84,6 +80,8 @@ wss.on('connection', (ws, req) => {
         default: {
           // @ts-ignore
           console.error(`unkown type ${message.type}`);
+
+          break;
         }
       }
     } catch (err) {
@@ -137,7 +135,6 @@ const unicast = <T, U>(message: ResMessage<T, U>, userId: UserId) => {
         // @ts-ignore
         `${color.green}->${color.reset} ${color.magenta}${client._socket.remoteAddress}:${client._socket.remotePort}${color.reset}`
       );
-      // console.debug(`${JSON.stringify(message, replacer, 2)}`);
     }
   }
 };
