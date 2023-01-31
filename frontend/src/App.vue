@@ -10,7 +10,7 @@ import type {
   ReqMessage,
   ResMessage,
   UserId,
-} from './types';
+} from '@/types';
 import { replacer, reviver } from '@/lib/jsonMap';
 import { shuffleArr } from '@/lib/shuffleArr';
 
@@ -108,8 +108,6 @@ const resetDice = () => {
 };
 
 const start = () => {
-  const userIds = [...gameState.value.userStates.keys()];
-
   // ターン
   gameState.value.userStates = new Map(
     shuffleArr([...gameState.value.userStates])
@@ -210,55 +208,71 @@ const nextUserId = (): UserId => {
 </script>
 
 <template>
-  <Msg
-    :isMyTurn="isMyTurn()"
-    :message="gameState.publicState?.message"
-    v-if="gameState.publicState?.turnUserId !== null"
-  />
-  <div v-else>
-    <a>{{ gameId }}</a
-    ><br />
-    <h1>share URL or <a @click="setGameId" class="reload">make new Room</a></h1>
-    <br />
-  </div>
+  <div id="container">
+    <Msg
+      :isMyTurn="isMyTurn()"
+      :message="gameState.publicState?.message"
+      v-if="gameState.publicState?.turnUserId !== null"
+    />
+    <h1 v-else>
+      share URL or <a @click="setGameId" class="reload">make new Room</a>
+    </h1>
 
-  <Dice
-    :diceArr="gameState.publicState?.diceArr"
-    :holdArr="gameState.publicState?.holdArr"
-    :diceRollCount="gameState.publicState?.diceRollCount"
-    :isMyTurn="isMyTurn()"
-    :diceHold="diceHold"
-    :diceRoll="diceRoll"
-  />
-  <ScoreBoard
-    :userStates="gameState.userStates"
-    :turnUserId="gameState.publicState?.turnUserId"
-    :diceArr="gameState.publicState?.diceArr"
-    :fixScore="fixScore"
-    :isMyTurn="isMyTurn()"
-    :turn="
-      gameState.publicState?.turnCount === undefined
-        ? 0
-        : Math.trunc(
-            gameState.publicState.turnCount / gameState.userStates.size
-          ) + 1
-    "
-    :gameTurn="gameTurn"
-  />
-  <button
-    @click="start"
-    v-if="
-      gameState.publicState?.turnUserId === null &&
-      gameState.userStates?.size >= 2
-    "
-  >
-    Start
-  </button>
+    <button
+      @click="start"
+      id="start"
+      v-if="
+        gameState.publicState?.turnUserId === null &&
+        gameState.userStates?.size >= 2
+      "
+    >
+      Start
+    </button>
+    <Dice
+      :diceArr="gameState.publicState?.diceArr"
+      :holdArr="gameState.publicState?.holdArr"
+      :diceRollCount="gameState.publicState?.diceRollCount"
+      :isMyTurn="isMyTurn()"
+      :diceHold="diceHold"
+      :diceRoll="diceRoll"
+    />
+
+    <ScoreBoard
+      :userStates="gameState.userStates"
+      :turnUserId="gameState.publicState?.turnUserId"
+      :diceArr="gameState.publicState?.diceArr"
+      :fixScore="fixScore"
+      :isMyTurn="isMyTurn()"
+      :turn="
+        gameState.publicState?.turnCount === undefined
+          ? 0
+          : Math.trunc(
+              gameState.publicState.turnCount / gameState.userStates.size
+            ) + 1
+      "
+      :gameTurn="gameTurn"
+    />
+  </div>
 </template>
 
 <style scoped>
 .reload {
   color: blue;
   text-decoration: underline;
+}
+
+#container {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  flex-wrap: wrap;
+}
+
+#container > * {
+  margin: 7px;
+}
+
+#start {
+  font-size: 2rem;
 }
 </style>

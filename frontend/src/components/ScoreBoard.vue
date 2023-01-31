@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { UserId, UserStates } from '../types/index';
 import type { StateUser } from '@/App.vue';
+import type { UserId, UserStates } from '@/types';
 
 const prop = defineProps<{
   userStates: UserStates<StateUser>;
@@ -184,7 +184,7 @@ const calcScore = (base: (typeof roll)[number] | number): number => {
 @import url('https://fonts.googleapis.com/css2?family=Slabo+27px&display=swap');
 .scoreBoard {
   font-family: 'Slabo 27px', serif;
-  /* line-height: 2rem; */
+  box-shadow: 10px 10px 1px rgb(184, 184, 185);
 }
 
 .fixable {
@@ -195,7 +195,7 @@ const calcScore = (base: (typeof roll)[number] | number): number => {
 }
 
 .fixed {
-  background-color: gray;
+  background-color: rgb(218, 218, 218);
 }
 .header {
   border-bottom: 5px solid;
@@ -216,5 +216,6 @@ td,
 th {
   border: 2px solid #333;
   font-size: 2rem;
+  background-color: white;
 }
 </style>

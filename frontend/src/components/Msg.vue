@@ -3,7 +3,11 @@ defineProps<{ isMyTurn: boolean; message: string }>();
 </script>
 
 <template>
-  <div>{{ isMyTurn ? message : 'stay' }}</div>
+  <h1 id="msg">{{ isMyTurn ? message : 'stay' }}</h1>
 </template>
 
-<style scoped></style>
+<style scoped>
+#msg {
+  padding-top: 0.25rem;
+}
+</style>
