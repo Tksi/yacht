@@ -4,7 +4,7 @@ defineProps<{
   holdArr: boolean[];
   diceRollCount: number;
   isMyTurn: boolean;
-  diceHold: (e: MouseEvent) => void;
+  diceHold: (diceIndex: number) => void;
   diceRoll: (e: MouseEvent) => void;
 }>();
 </script>
@@ -15,11 +15,11 @@ defineProps<{
       v-for="[index, number] in Object.entries(diceArr ?? [])"
       :key="index"
       class="dice"
-      @click="diceHold"
+      @click="() => diceHold(+index)"
       :id="index"
       :class="{ holdable: isMyTurn, hold: holdArr[+index] ?? false }"
     >
-      <span @click="diceHold" :id="index">{{ number }} </span>
+      <span>{{ number }} </span>
     </span>
     <button v-if="isMyTurn && 3 - diceRollCount" @click="diceRoll" id="roll">
       🎲{{ 3 - diceRollCount }}

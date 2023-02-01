@@ -11,6 +11,7 @@ import type {
   ResMessage,
   UserId,
 } from '@/types';
+import { isMyTurn } from '@/lib/isMyTurn';
 import { replacer, reviver } from '@/lib/jsonMap';
 import { shuffleArr } from '@/lib/shuffleArr';
 
@@ -44,7 +45,6 @@ const ws = new WebSocket(import.meta.env.VITE_WS ?? 'ws://localhost:4567');
 let gameState = ref<GameState<StatePublic, StateUser>>({});
 let userName = localStorage.getItem('userName');
 let myUserId: UserId;
-const isMyTurn = () => gameState.value.publicState?.turnUserId === myUserId;
 
 const send = () =>
   ws.send(
@@ -130,17 +130,15 @@ const start = () => {
   send();
 };
 
-const diceHold = (e: MouseEvent): void => {
-  if (!isMyTurn()) return;
-
-  if (e.target instanceof HTMLElement) {
-    gameState.value.publicState.holdArr[+e.target.id] = true;
+const diceHold = (diceIndex: number): void => {
+  if (isMyTurn({ gameState: gameState.value, myUserId })) {
+    gameState.value.publicState.holdArr[diceIndex] = true;
     send();
   }
 };
 
 const diceRoll = () => {
-  if (!isMyTurn()) return;
+  if (!isMyTurn({ gameState: gameState.value, myUserId })) return;
 
   for (let i = 0; i < gameState.value.publicState.diceArr.length; i++) {
     if (gameState.value.publicState.holdArr[i] === false) {
@@ -159,7 +157,13 @@ const fixScore = (
   fixed: boolean,
   index: number
 ): void => {
-  if (!isMyTurn() || userId !== myUserId || fixed) return;
+  if (
+    !isMyTurn({ gameState: gameState.value, myUserId }) ||
+    userId !== myUserId ||
+    fixed
+  ) {
+    return;
+  }
 
   const userState = gameState.value.userStates.get(
     gameState.value.publicState.turnUserId!
@@ -209,7 +213,7 @@ const nextUserId = (): UserId => {
 <template>
   <div id="container">
     <Msg
-      :isMyTurn="isMyTurn()"
+      :isMyTurn="isMyTurn({ gameState: gameState, myUserId })"
       :message="gameState.publicState?.message"
       v-if="gameState.publicState?.turnUserId !== null"
     />
@@ -231,7 +235,7 @@ const nextUserId = (): UserId => {
       :diceArr="gameState.publicState?.diceArr"
       :holdArr="gameState.publicState?.holdArr"
       :diceRollCount="gameState.publicState?.diceRollCount"
-      :isMyTurn="isMyTurn()"
+      :isMyTurn="isMyTurn({ gameState: gameState, myUserId })"
       :diceHold="diceHold"
       :diceRoll="diceRoll"
     />
@@ -241,7 +245,7 @@ const nextUserId = (): UserId => {
       :turnUserId="gameState.publicState?.turnUserId"
       :diceArr="gameState.publicState?.diceArr"
       :fixScore="fixScore"
-      :isMyTurn="isMyTurn()"
+      :isMyTurn="isMyTurn({ gameState: gameState, myUserId })"
       :turn="
         gameState.publicState?.turnCount === undefined
           ? 0
