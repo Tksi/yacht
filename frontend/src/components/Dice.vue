@@ -13,11 +13,15 @@ defineProps<{
   <div>
     <span
       v-for="[index, number] in Object.entries(diceArr ?? [])"
-      :key="index"
+      :key="diceRollCount"
       class="dice"
       @click="() => diceHold(+index)"
       :id="index"
-      :class="{ holdable: isMyTurn, hold: holdArr[+index] ?? false }"
+      :class="{
+        holdable: isMyTurn,
+        hold: holdArr[+index] ?? false,
+        rollAnimation: !holdArr[+index],
+      }"
     >
       <span>{{ number }} </span>
     </span>
@@ -61,5 +65,22 @@ defineProps<{
   background-color: rgb(218, 218, 218);
   transform: translate(5px, 5px);
   box-shadow: 0 0;
+}
+
+.rollAnimation {
+  animation: 0.3s ease-out forwards roll;
+}
+
+@keyframes roll {
+  from {
+    transform: rotate(0deg) scale(0.5);
+
+    opacity: 0;
+  }
+
+  to {
+    transform: rotate(360deg) scale(1);
+    opacity: 1;
+  }
 }
 </style>

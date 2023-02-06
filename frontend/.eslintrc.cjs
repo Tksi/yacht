@@ -90,6 +90,7 @@ module.exports = {
     'unicorn/prefer-array-index-of': 'off',
     'unicorn/prefer-dom-node-text-content': 'off',
     'vue/multi-word-component-names': 'off',
+    'vue/valid-v-for': 'off',
     'unicorn/catch-error-name': [
       'warn',
       {
