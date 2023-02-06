@@ -42,7 +42,7 @@ const calcScore = (base: (typeof roll)[number] | number): number => {
     case '4Dice': {
       if (
         [...diceSet].some(
-          (num) => prop.diceArr.filter((v) => v === num).length === 4
+          (num) => prop.diceArr.filter((v) => v === num).length >= 4
         )
       ) {
         return prop.diceArr.reduce((b, a) => b + a);
